@@ -1,5 +1,5 @@
 """ Primary commandline interface for using gitkeeper
-    (c) Alex Wang, Shivaal Roy, Will Bradbury
+    (c) Alexander Wang, Shivaal Roy, Will Bradbury
 """
 import sys
 import util
