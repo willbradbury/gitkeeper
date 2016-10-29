@@ -6,12 +6,12 @@ import urllib2
 import os
 import json
 
-def download(repo_name):
+def download(repo_name, v=1):
   """ Try to open |repo_name| locally, but if it doesn't exist,
       download it from github/repo_name."""
-  rp = Repo(name=repo_name)
+  rp = Repo(name=repo_name, v=v)
   if not rp.exists:
-      return RemoteRepo(name=repo_name).download().getRepo()
+      return RemoteRepo(name=repo_name, v=v).download().getRepo()
   else:
       return rp
 
@@ -20,16 +20,20 @@ def createAndCd(directory):
         os.makedirs(directory)
     os.chdir(directory)
 
-def downloadPullRequests(repo_name, start_index, end_index):
+def downloadPullRequests(repo_name, start_index, end_index, v=1):
   for diff in xrange(start_index, end_index):
-    # urllib2.urlretrieve('http://api.github.com/repos/' + repo_name + '/pulls/' + str(diff), str(diff) + '.metadata')
-    # urllib2.request.retrieve()
-    open(str(diff) + '.metadata', 'wrb').write(urllib2.urlopen(
-       'http://api.github.com/repos/' + repo_name + '/pulls/' + str(diff)).read())
-    open(str(diff) + '.diff', 'wrb').write(urllib2.urlopen(
-       'http://www.github.com/' + repo_name + '/pull/' + str(diff) + '.diff').read())
-    print 'http://api.github.com/repos/' + repo_name + '/pulls/' + str(diff)
-    print 'http://www.github.com/' + repo_name + '/pull/' + str(diff) + '.diff'
+    try:
+      open(str(diff) + '.metadata', 'wrb').write(urllib2.urlopen(
+         'http://api.github.com/repos/' + repo_name + '/pulls/' + str(diff)).read())
+      open(str(diff) + '.diff', 'wrb').write(urllib2.urlopen(
+         'http://www.github.com/' + repo_name + '/pull/' + str(diff) + '.diff').read())
+      log(v,3,"successfully downloaded pull request " + str(diff) + " from "+ repo_name)
+    except Exception as e:
+      log(v,3,str(e))
 
 def go_to_parent():
   os.chdir('../')
+
+def log(verbosity, level, message):
+  if verbosity >= level:
+    print message
