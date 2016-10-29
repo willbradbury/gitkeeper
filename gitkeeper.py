@@ -5,7 +5,7 @@ import sys
 import util
 from model_factory import ModelFactory
 
-models = ['baseline', 'oracle']
+models = ['baseline']
 holdout_fraction = 0.2
 verbosity = 3
 
@@ -26,7 +26,7 @@ def main():
     # build all the models
     for model in models:
       util.log(verbosity, 2, "training model " + model)
-      m = ModelFactory(model, holdout=holdout_fraction, repo=rp, v=verbosity)
+      m = ModelFactory(model, repo=rp, v=verbosity)
       m.train()
       util.log(verbosity, 2, "testing model " + model)
       m.test()
