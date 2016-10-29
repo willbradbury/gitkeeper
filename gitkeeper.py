@@ -17,6 +17,7 @@ def usage():
 def main():
   if '--help' in sys.argv or '-h' in sys.argv:
     usage()
+    return
 
   # Iterate through requested repositories
   for repo in sys.argv[1:]:

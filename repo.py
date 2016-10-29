@@ -22,7 +22,7 @@ class Repo(object):
   def getExamples(self, inTraining):
     folder_path = default_repo_root + self.id + ("/train" if inTraining else "/test")
     example_files = [int(f.split('.')[0]) \
-        for f in os.listdir(folder_path) if isfile(join(folder_path, f))]
+        for f in os.listdir(folder_path) if isfile(join(folder_path, f)) and f[0] is not '.']
     pull_ids = sorted(list(set(example_files)))
     util.log(self.v, 3, "listing examples for " + self.name)
     for pid in pull_ids:
@@ -30,11 +30,11 @@ class Repo(object):
 
   def getDiffFile(self, pid, inTraining):
     folder = default_repo_root + self.id + ("/train/" if inTraining else "/test/")
-    return open(folder + str(pid) + ".diff")
+    return open(folder + str(pid) + ".diff", 'rb')
   
   def getMetaFile(self, pid, inTraining):
     folder = default_repo_root + self.id + ("/train/" if inTraining else "/test/")
-    return open(folder + str(pid) + ".metadata")
+    return open(folder + str(pid) + ".metadata", 'rb')
 
 class RemoteRepo(object):
   def __init__(self, name, v=1):
