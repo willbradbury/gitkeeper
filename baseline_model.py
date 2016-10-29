@@ -65,6 +65,5 @@ class BaselineExtractor(object):
     return np.array([[1]])
 
   def label(self, meta_json):
-    if random.randint(0,1) is 1:
-      return np.array([1])
-    return np.array([0])
+    if meta_json['merged']: return 1
+    return -1
