@@ -84,4 +84,8 @@ class LSTMTrainer(object):
     updater = training.StandardUpdater(train_iter, optimizer, update_bptt)
     trainer = training.Trainer(updater, (20, 'epoch'), out='result')
     trainer.extend(extensions.Evaluator(self.dev_iter, self.model))
+    trainer.extend(extensions.PrintReport(['epoch',
+      'main/accuracy',
+      'validation/main/accuracy']))
+    trainer.extend(extensions.ProgressBar())
     return trainer
