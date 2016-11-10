@@ -8,7 +8,6 @@ import chainer.functions as F
 import chainer.links as L
 from chainer.training import extensions
 
-
 class RNN(Chain):
   def __init__(self):
     super(RNN, self).__init__(
