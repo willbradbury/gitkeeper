@@ -6,7 +6,7 @@ import urllib2
 import os
 import json
 
-github_access_token = "b753d1f3d79aac7c1f47e795a77a68c6f1f40b06"
+github_access_token = ""
 
 def download(repo_name, v=1):
   """ Try to open |repo_name| locally, but if it doesn't exist,
