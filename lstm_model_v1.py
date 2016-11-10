@@ -1,11 +1,24 @@
 """ First pass at LSTM based model implementation.
     (c) Alex Wang, Shivaal Roy, Will Bradbury"""
 
+# chainer imports
+from __future__ import division
+import numpy as np
+import chainer
+from chainer import cuda, Function, gradient_check, report, training, utils, Variable
+from chainer import datasets, iterators, optimizers, serializers
+from chainer import Link, Chain, ChainList
+import chainer.functions as F
+import chainer.links as L
+from chainer.training import extensions
+
+# sklearn imports
 from sklearn.svm import SVC
 from sklearn.feature_extraction.text import CountVectorizer
+
+# gitkeeper imports
 from lstm_trainer import LSTMTrainer
 import json, util, random, model
-import numpy as np
 
 class LSTMModel(model.Model):
   def __init__(self, repo, v=1):
@@ -13,7 +26,7 @@ class LSTMModel(model.Model):
     self.file_tokenizer = FileTokenizer(v=v)
     self.diff_tokenizer = DiffTokenizer(self.file_tokenizer, v=v)
     self.repo_tokenizer = RepoTokenizer(self.file_tokenizer, v=v)
-    self.token_embedder = TokenEmbedder(embed_size=1000, v=v)
+    self.embedder = TokenEmbedder(embed_size=1000, v=v)
     self.repo = repo
     self.clf = SVC()
 
@@ -115,4 +128,4 @@ class TokenEmbedder(object):
   def embed(self, token_stream):
     util.log(self.v, 3, "embedding stream")
     for token in token_stream:
-      yield np.array(hash(token) % self.size) #TODO: CHANGE THIS!!!
+      yield np.array(min(ord(token), self.size-1)) 

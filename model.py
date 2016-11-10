@@ -9,9 +9,10 @@ def model_factory(model, repo, v):
 class ModelRegistry(type):
   """Metaclass to keep track of defined models."""
   def __init__(cls, name, bases, dct):
-    print 'registering %s' % (name,)
     if not hasattr(cls, '_registry'):
       cls._registry = {}
+    if name == 'Model': return
+    print 'registering %s' % (name,)
     cls._registry[name] = cls
     super(ModelRegistry, cls).__init__(name, bases, dct)
 

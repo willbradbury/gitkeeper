@@ -4,7 +4,8 @@
 import sys
 import util
 from model import Model, model_factory
-from baseline_model import BaselineModel
+#from baseline_model import BaselineModel
+from lstm_model_v1 import LSTMModel
 
 holdout_fraction = 0.2
 verbosity = 3

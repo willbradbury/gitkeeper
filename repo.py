@@ -38,10 +38,9 @@ class Repo(object):
 
   def getDirList(self):
     fileList = []
-    for root, subdirs, files in os.walk(default_repo_root + self.name):
-      for file in files:
-        fileList.append(root + "/" + file)
-    return fileList
+    for root, _, files in os.walk(default_repo_root + self.name):
+      for filename in files:
+        yield root + "/" + file
 
 
 class RemoteRepo(object):
