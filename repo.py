@@ -36,6 +36,14 @@ class Repo(object):
     folder = default_repo_root + self.id + ("/train/" if inTraining else "/test/")
     return open(folder + str(pid) + ".metadata", 'rb')
 
+  def getDirList(self):
+    fileList = []
+    for root, subdirs, files in os.walk(default_repo_root + self.name):
+      for file in files:
+        fileList.append(root + "/" + file)
+    return fileList
+
+
 class RemoteRepo(object):
   def __init__(self, name, v=1):
     self.name = name

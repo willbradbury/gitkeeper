@@ -15,6 +15,7 @@ class LSTMModel(model.Model):
     self.repo_tokenizer = RepoTokenizer(self.file_tokenizer, v=v)
     self.token_embedder = TokenEmbedder(embed_size=1000, v=v)
     self.repo = repo
+    self.clf = SVC()
 
   def train(self):
     util.log(self.v, 1, "beginning training on " + self.repo.name)
@@ -72,8 +73,8 @@ class FileTokenizer(object):
     self.v = v
 
   def tokenize(self, f):
-    # tokenize using the yield operator
-    return
+    for char in f.read():
+      yield char
 
 class DiffTokenizer(object):
   """A class to tokenize a collection of diffs using a file tokenizer"""
@@ -81,10 +82,14 @@ class DiffTokenizer(object):
     self.v = v
     self.ft = ft
 
-  def tokenize(self, repo, subset):
-    util.log(self.v, 3, "tokenizing diffs in "+repo.name+"/"+subset)
+  def tokenize(self, repo, inTraining=True):
     # tokenize using the yield operator
-    return
+    util.log(self.v, 3, "tokenizing diffs in "+repo.name+"/"+("train" if inTraining else "test"))
+
+    for i,pid in enumerate(repo.getExamples(inTraining=inTraining)):
+      diff_f = repo.getDiffFile(pid, inTraining=inTraining)
+      for token in self.ft.tokenize(diff_f):
+        yield token
 
 class RepoTokenizer(object):
   """A class to tokenize an entire repo using a file tokenizer"""
@@ -95,7 +100,11 @@ class RepoTokenizer(object):
   def tokenize(self, repo):
     util.log(self.v, 3, "tokenizing repo " + repo.name)
     # tokenize using the yield operator
-    return
+    fileNames = repo.getDirList()
+    for fileName in fileNames:
+      f = open(fileName)
+      for token in self.ft.tokenize(f):
+        yield token
 
 class TokenEmbedder(object):
   """A class to turn tokens into token ids"""
