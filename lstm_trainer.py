@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import chainer
 from chainer import cuda, Function, gradient_check, report, training, utils, Variable
@@ -6,7 +7,6 @@ from chainer import Link, Chain, ChainList
 import chainer.functions as F
 import chainer.links as L
 from chainer.training import extensions
-from __future__ import division
 
 class RNN(Chain):
   def __init__(self):

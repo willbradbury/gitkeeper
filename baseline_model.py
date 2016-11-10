@@ -26,7 +26,8 @@ class BaselineModel(model.Model):
 
       meta_json = json.load(meta_f)
       corpus.append(diff_f.read())
-      y = np.append(y,self.extractor.label(meta_json), axis=0)
+      y = np.append(y,self.extractor.label(meta_json))
+
     self.vectorizer = CountVectorizer(min_df=1)
     X = self.vectorizer.fit_transform(corpus)
     self.clf.fit(X,y)
@@ -45,7 +46,7 @@ class BaselineModel(model.Model):
 
       meta_json = json.load(meta_f)
       test_diffs.append(diff_f.read())
-      y = np.append(y,self.extractor.label(meta_json), axis=0)
+      y = np.append(y,self.extractor.label(meta_json))
 
     X = self.vectorizer.transform(test_diffs)
     score = self.clf.score(X,y)

@@ -37,7 +37,7 @@ class LSTMModel(model.Model):
 
       meta_f = self.repo.getMetaFile(pid, inTraining=True)
       meta_json = json.load(meta_f)
-      y = np.append(y,self.extractor.label(meta_json), axis=0)
+      y = np.append(y,self.extractor.label(meta_json))
     X = np.transpose(x) # may not be necessary... TODO: check
     self.clf.fit(X,y)
     score = self.clf.score(X,y)
@@ -53,7 +53,7 @@ class LSTMModel(model.Model):
 
       meta_f = self.repo.getMetaFile(pid, inTraining=False)
       meta_json = json.load(meta_f)
-      y = np.append(y,self.extractor.label(meta_json), axis=0)
+      y = np.append(y,self.extractor.label(meta_json))
 
     X = np.transpose(x) # necessary? TODO: check
     score = self.clf.score(X,y)
