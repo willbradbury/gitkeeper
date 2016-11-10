@@ -1,11 +1,11 @@
 """ First pass at LSTM based model implementation.
     (c) Alex Wang, Shivaal Roy, Will Bradbury"""
 
-import numpy as np
 from sklearn.svm import SVC
 from sklearn.feature_extraction.text import CountVectorizer
-import json, util, random, model
 from lstm_trainer import LSTMTrainer
+import json, util, random, model
+import numpy as np
 
 class LSTMModel(model.Model):
   def __init__(self, repo, v=1):
