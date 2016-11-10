@@ -4,11 +4,10 @@
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.feature_extraction.text import CountVectorizer
-import json
-import util
-import random
+import json, util, random
+import model
 
-class BaselineModel(object):
+class BaselineModel(model.Model):
   def __init__(self, repo, v=1):
     self.v = v
     self.extractor = BaselineExtractor()

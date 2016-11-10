@@ -3,9 +3,9 @@
 """
 import sys
 import util
-from model_factory import ModelFactory
+from model import Model, model_factory
+from baseline_model import BaselineModel
 
-models = ['baseline']
 holdout_fraction = 0.2
 verbosity = 3
 
@@ -25,9 +25,9 @@ def main():
     rp = util.download(repo, v=verbosity)
 
     # build all the models
-    for model in models:
+    for model in Model._registry:
       util.log(verbosity, 2, "training model " + model)
-      m = ModelFactory(model, repo=rp, v=verbosity)
+      m = model_factory(model, repo=rp, v=verbosity)
       m.train()
       util.log(verbosity, 2, "testing model " + model)
       m.test()
