@@ -10,6 +10,7 @@ default_repo_root = os.environ['HOME']+"/gitkeeper/repos/"
 class Repo(object):
   def __init__(self, name, root=default_repo_root, v=1):
     self.name = name
+    self.repoName = name.split('/')[1]
     self.id = self.name.replace('/', '.')
     self.v = v
     if not os.path.exists(default_repo_root + self.id):
@@ -38,9 +39,11 @@ class Repo(object):
 
   def getDirList(self):
     fileList = []
-    for root, _, files in os.walk(default_repo_root + self.name):
+    print "Getting directory list from ", default_repo_root + self.id + '/' + self.repoName
+    for root, _, files in os.walk(default_repo_root + self.id + '/' + self.repoName):
       for filename in files:
-        yield root + "/" + file
+        if filename[0] == '.' or '/.' in root: continue
+        yield root + "/" + filename
 
 
 class RemoteRepo(object):

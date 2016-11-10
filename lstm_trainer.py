@@ -60,33 +60,43 @@ class ParallelSequentialIterator(chainer.dataset.Iterator):
     self.iteration = serializer('iteration', self.iteration)
     self.epoch = serializer('epoch', self.epoch)
 
+class BPTTUpdater(training.StandardUpdater):
+  def __init__(self, train_iter, optimizer, bprop_len, device):
+    super(BPTTUpdater, self).__init__(
+      train_iter, optimizer, device=device)
+    self.bprop_len = bprop_len
+
+  def update_core(self):
+    loss = 0
+    train_iter = self.get_iterator('main')
+    optimizer = self.get_optimizer('main')
+
+    for i in range(self.bprop_len):
+      batch = train_iter.__next__()
+      x,t = self.converter(batch, self.device)
+
+      loss += optimizer.target(Variable(x), Variable(t))
+
+    optimizer.target.cleargrads()
+    loss.backward()
+    loss.unchain_backward()
+    optimizer.update()
+
 class LSTMTrainer(object):
   def __init__(self, train, dev):
     self.rnn = RNN()
-    self.model = L.Classifier(rnn)
+    self.model = L.Classifier(self.rnn)
     self.optimizer = optimizers.SGD()
-    self.optimizer.setup(model)
+    self.optimizer.setup(self.model)
     self.train_iter = ParallelSequentialIterator(train, 20)
     self.dev_iter = ParallelSequentialIterator(dev, 1, repeat=False)
 
-  def update_bptt(self, updater):
-    loss = 0
-    for i in range(35):
-      batch = self.train_iter.__next__()
-      x, t = chainer.dataset.concat_example(batch)
-      loss += self.model(chainer.Variable(x), chainer.Variable(t))
-
-    self.model.cleargrads()
-    loss.backward()
-    loss.unchain_backward()
-    self.optimizer.update()
-
   def get_trainer(self):
-    updater = training.StandardUpdater(train_iter, optimizer, update_bptt)
+    updater = BPTTUpdater(self.train_iter, self.optimizer, 35, -1)
     trainer = training.Trainer(updater, (20, 'epoch'), out='result')
     trainer.extend(extensions.Evaluator(self.dev_iter, self.model))
+    trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(['epoch',
       'main/accuracy',
       'validation/main/accuracy']))
-    trainer.extend(extensions.ProgressBar())
     return trainer
