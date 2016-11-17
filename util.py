@@ -1,12 +1,10 @@
 """ Helpful utility functions for file and github tasks
     (c) Alex Wang, Shivaal Roy, Will Bradbury
 """
+import urllib2, os, json
 from repo import Repo, RemoteRepo
-import urllib2
-import os
-import json
 
-github_access_token = "718c1500f290574ab1334ff41c7069176e0dabb8"
+github_access_token = os.environ['GITHUBTOKEN']
 
 def download(repo_name, v=1):
   """ Try to open |repo_name| locally, but if it doesn't exist,

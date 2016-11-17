@@ -77,7 +77,7 @@ class BPTTUpdater(training.StandardUpdater):
       batch = train_iter.__next__()
       x,t = self.converter(batch, self.device)
 
-      loss += optimizer.target(Variable(x), Variable(t))
+      loss += optimizer.target(Variable(x, volatile='off'), Variable(t, volatile='off'))
 
     optimizer.target.cleargrads()
     loss.backward()

@@ -37,6 +37,9 @@ class LSTMModel(model.Model):
     self.train_set = np.array(list(self.embedder.embed(self.repo_tokenizer.tokenize(self.repo))), dtype=np.int32)
     self.dev_set = np.array(list(self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))), dtype=np.int32)
 
+    self.train_set = self.train_set[:100]
+    self.dev_set = self.dev_set[:100]
+
     # train the rnn on the repo, reporting dev error along the way
     self.lstm_trainer = LSTMTrainer(self.train_set, self.dev_set, v=self.v)
     self.lstm_trainer.get_trainer().run()
