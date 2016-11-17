@@ -9,6 +9,8 @@ import chainer.functions as F
 import chainer.links as L
 from chainer.training import extensions
 
+import util
+
 class RNN(Chain):
   def __init__(self):
     super(RNN, self).__init__(
@@ -61,17 +63,19 @@ class ParallelSequentialIterator(chainer.dataset.Iterator):
     self.epoch = serializer('epoch', self.epoch)
 
 class LSTMTrainer(object):
-  def __init__(self, train, dev):
+  def __init__(self, train, dev, v):
+    self.v = v
     self.rnn = RNN()
     self.model = L.Classifier(rnn)
     self.optimizer = optimizers.SGD()
     self.optimizer.setup(model)
-    self.train_iter = ParallelSequentialIterator(train, 20)
+    self.train_iter = ParallelSequentialIterator(train, 20, repeat=True)
     self.dev_iter = ParallelSequentialIterator(dev, 1, repeat=False)
 
   def update_bptt(self, updater):
+    util.log(self.v, 4, "running an  update")
     loss = 0
-    for i in range(35):
+    for i in range(100):
       batch = self.train_iter.__next__()
       x, t = chainer.dataset.concat_example(batch)
       loss += self.model(chainer.Variable(x), chainer.Variable(t))

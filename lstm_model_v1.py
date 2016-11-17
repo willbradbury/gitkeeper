@@ -40,7 +40,7 @@ class LSTMModel(model.Model):
         for i in self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))]
 
     # train the rnn on the repo, reporting dev error along the way
-    self.lstm_trainer = LSTMTrainer(self.train_set, self.dev_set)
+    self.lstm_trainer = LSTMTrainer(self.train_set, self.dev_set, v=self.v)
     self.lstm_trainer.get_trainer().run()
 
     # learn svm on the perplexity feature

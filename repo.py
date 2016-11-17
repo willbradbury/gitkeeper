@@ -40,7 +40,7 @@ class Repo(object):
     fileList = []
     for root, _, files in os.walk(default_repo_root + self.name):
       for filename in files:
-        yield root + "/" + file
+        yield root + "/" + filename
 
 
 class RemoteRepo(object):
