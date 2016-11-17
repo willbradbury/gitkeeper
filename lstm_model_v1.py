@@ -27,6 +27,7 @@ class LSTMModel(model.Model):
     self.diff_tokenizer = DiffTokenizer(self.file_tokenizer, v=v)
     self.repo_tokenizer = RepoTokenizer(self.file_tokenizer, v=v)
     self.embedder = TokenEmbedder(embed_size=1000, v=v)
+    self.extractor = SimpleExtractor(v=v)
     self.repo = repo
     self.clf = SVC()
 
@@ -36,9 +37,6 @@ class LSTMModel(model.Model):
     # tokenize the repo and the training diffs
     self.train_set = np.array(list(self.embedder.embed(self.repo_tokenizer.tokenize(self.repo))), dtype=np.int32)
     self.dev_set = np.array(list(self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))), dtype=np.int32)
-
-    self.train_set = self.train_set[:100]
-    self.dev_set = self.dev_set[:100]
 
     # train the rnn on the repo, reporting dev error along the way
     self.lstm_trainer = LSTMTrainer(self.train_set, self.dev_set, v=self.v)
@@ -53,7 +51,8 @@ class LSTMModel(model.Model):
       meta_f = self.repo.getMetaFile(pid, inTraining=True)
       meta_json = json.load(meta_f)
       y = np.append(y,self.extractor.label(meta_json))
-    X = np.transpose(x) # may not be necessary... TODO: check
+      print x,y
+    X = x.reshape(x.size,1)
     self.clf.fit(X,y)
     score = self.clf.score(X,y)
       
@@ -70,16 +69,17 @@ class LSTMModel(model.Model):
       meta_json = json.load(meta_f)
       y = np.append(y,self.extractor.label(meta_json))
 
-    X = np.transpose(x) # necessary? TODO: check
+    X = x.reshape(x.size,1)
+    print y
     score = self.clf.score(X,y)
     util.log(self.v, 1, "mean testing accuracy: " + str(score))
 
   def get_perplexity(self, diff):
     """computes the loss when trying to predict the next token from each token
     in |diff|."""
-    diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff), np=True))
-    volatile_tokens = [Variable(tok_id, volatile='on') for tok_id in diff_tokens]
-    return self.lstm_trainer.compute_loss(volatile_tokens)
+    diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff), wrap=False))
+    diff_tokens = diff_tokens[:1000]
+    return self.lstm_trainer.compute_perplexity_slow(diff_tokens)
 
 class FileTokenizer(object):
   """A class to tokenize files"""
@@ -126,8 +126,19 @@ class TokenEmbedder(object):
     self.v = v
     self.size = embed_size # number of total IDs to make
 
-  def embed(self, token_stream, np=False):
+  def embed(self, token_stream, wrap=False):
     util.log(self.v, 3, "embedding stream")
     for token in token_stream:
-      if np: yield np.array(min(ord(token), self.size-1))
+      if wrap: yield np.array(min(ord(token), self.size-1))
       else: yield min(ord(token), self.size-1)
+
+class SimpleExtractor(object):
+  def __init__(self, v=1):
+    self.v = v
+
+  def extract(self, diff_f, meta_json):
+    return None
+
+  def label(self, meta_json):
+    if meta_json['merged']: return 1
+    return -1

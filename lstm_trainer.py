@@ -77,7 +77,7 @@ class BPTTUpdater(training.StandardUpdater):
       batch = train_iter.__next__()
       x,t = self.converter(batch, self.device)
 
-      loss += optimizer.target(Variable(x, volatile='off'), Variable(t, volatile='off'))
+      loss += optimizer.target(Variable(x), Variable(t))
 
     optimizer.target.cleargrads()
     loss.backward()
@@ -89,17 +89,35 @@ class LSTMTrainer(object):
     self.v = v
     self.rnn = RNN()
     self.model = L.Classifier(self.rnn)
+    self.eval_model = self.model.copy()
+    self.eval_model.predictor.train = False
     self.optimizer = optimizers.SGD()
-    self.optimizer.setup(model)
+    self.optimizer.setup(self.model)
     self.train_iter = ParallelSequentialIterator(train, 20, repeat=True)
     self.dev_iter = ParallelSequentialIterator(dev, 1, repeat=False)
 
   def get_trainer(self):
     updater = BPTTUpdater(self.train_iter, self.optimizer, 35, -1)
     trainer = training.Trainer(updater, (20, 'epoch'), out='result')
-    trainer.extend(extensions.Evaluator(self.dev_iter, self.model))
+    trainer.extend(extensions.Evaluator(self.dev_iter, self.eval_model,
+      eval_hook=lambda _: self.eval_model.predictor.reset_state()))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(['epoch',
       'main/accuracy',
       'validation/main/accuracy']))
     return trainer
+
+  def compute_perplexity(self, test_set):
+    self.eval_model.predictor.reset_state()
+    test_itr = ParallelSequentialIterator(test_set, 1, repeat=False)
+    evaluator = extensions.Evaluator(test_itr, self.eval_model, device=-1)
+    result = evaluator()
+    return np.exp(float(result['main/loss']))
+
+  def compute_perplexity_slow(self, test_set):
+    loss = 0
+    for cur_word, next_word in zip(test_set, test_set[1:]):
+      loss += self.eval_model(Variable(np.array([cur_word], dtype=np.int32), volatile='on'), Variable(np.array([next_word], dtype=np.int32), volatile='on'))
+    if loss is 0:
+      return 0
+    return np.exp(float(loss.data)/len(test_set))
