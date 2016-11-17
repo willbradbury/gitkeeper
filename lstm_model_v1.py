@@ -34,10 +34,8 @@ class LSTMModel(model.Model):
     util.log(self.v, 1, "beginning training on " + self.repo.name)
 
     # tokenize the repo and the training diffs
-    self.train_set = [Variable(i) \
-        for i in self.embedder.embed(self.repo_tokenizer.tokenize(self.repo))]
-    self.dev_set = [Variable(i) \
-        for i in self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))]
+    self.train_set = np.array(list(self.embedder.embed(self.repo_tokenizer.tokenize(self.repo))), dtype=np.int32)
+    self.dev_set = np.array(list(self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))), dtype=np.int32)
 
     # train the rnn on the repo, reporting dev error along the way
     self.lstm_trainer = LSTMTrainer(self.train_set, self.dev_set, v=self.v)
@@ -76,7 +74,7 @@ class LSTMModel(model.Model):
   def get_perplexity(self, diff):
     """computes the loss when trying to predict the next token from each token
     in |diff|."""
-    diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff)))
+    diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff), np=True))
     volatile_tokens = [Variable(tok_id, volatile='on') for tok_id in diff_tokens]
     return self.lstm_trainer.compute_loss(volatile_tokens)
 
@@ -113,8 +111,8 @@ class RepoTokenizer(object):
   def tokenize(self, repo):
     util.log(self.v, 3, "tokenizing repo " + repo.name)
     # tokenize using the yield operator
-    fileNames = repo.getDirList()
-    for fileName in fileNames:
+    for fileName in repo.getDirList():
+      print "Tokenizing fileName: ", fileName
       f = open(fileName)
       for token in self.ft.tokenize(f):
         yield token
@@ -125,7 +123,8 @@ class TokenEmbedder(object):
     self.v = v
     self.size = embed_size # number of total IDs to make
 
-  def embed(self, token_stream):
+  def embed(self, token_stream, np=False):
     util.log(self.v, 3, "embedding stream")
     for token in token_stream:
-      yield np.array(min(ord(token), self.size-1)) 
+      if np: yield np.array(min(ord(token), self.size-1))
+      else: yield min(ord(token), self.size-1)
