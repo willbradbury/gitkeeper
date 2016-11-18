@@ -26,7 +26,7 @@ class LSTMModel(model.Model):
     self.file_tokenizer = FileTokenizer(v=v)
     self.diff_tokenizer = DiffTokenizer(self.file_tokenizer, v=v)
     self.repo_tokenizer = RepoTokenizer(self.file_tokenizer, v=v)
-    self.embedder = TokenEmbedder(embed_size=1000, cap=50000, v=v)
+    self.embedder = TokenEmbedder(embed_size=1000, cap=500, v=v)
     self.extractor = SimpleExtractor(v=v)
     self.repo = repo
     self.clf = SVC()
