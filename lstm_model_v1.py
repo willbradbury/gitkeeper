@@ -26,7 +26,7 @@ class LSTMModel(model.Model):
     self.file_tokenizer = FileTokenizer(v=v)
     self.diff_tokenizer = DiffTokenizer(self.file_tokenizer, v=v)
     self.repo_tokenizer = RepoTokenizer(self.file_tokenizer, v=v)
-    self.embedder = TokenEmbedder(embed_size=1000, v=v)
+    self.embedder = TokenEmbedder(embed_size=1000, cap=5000, v=v)
     self.extractor = SimpleExtractor(v=v)
     self.repo = repo
     self.clf = SVC()
@@ -122,15 +122,19 @@ class RepoTokenizer(object):
 
 class TokenEmbedder(object):
   """A class to turn tokens into token ids"""
-  def __init__(self, embed_size, v):
+  def __init__(self, embed_size, v, cap=5000):
     self.v = v
     self.size = embed_size # number of total IDs to make
+    self.cap = cap
 
   def embed(self, token_stream, wrap=False):
     util.log(self.v, 3, "embedding stream")
+    embeds = 0
     for token in token_stream:
       if wrap: yield np.array(min(ord(token), self.size-1))
       else: yield min(ord(token), self.size-1)
+      embeds += 1
+      if embeds > self.cap: break
 
 class SimpleExtractor(object):
   def __init__(self, v=1):
