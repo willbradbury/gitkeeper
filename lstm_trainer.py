@@ -11,21 +11,6 @@ from chainer.training import extensions
 
 import util
 
-class RNN(Chain):
-  def __init__(self):
-    super(RNN, self).__init__(
-        embed = L.EmbedID(1000, 100), # word embedding
-        mid = L.LSTM(100, 50), # the first LSTM layer
-        out = L.Linear(50, 1000), # the feed-forward output layer
-    )
-
-  def reset_state(self):
-    self.mid.reset_state()
-
-  def __call__(self, cur_word):
-    """Predict the next word given the |cur_word| id."""
-    return self.out(self.mid(self.embed(cur_word)))
-
 class ParallelSequentialIterator(chainer.dataset.Iterator):
   def __init__(self, dataset, batch_size, repeat=True):
     self.dataset = dataset
@@ -85,9 +70,9 @@ class BPTTUpdater(training.StandardUpdater):
     optimizer.update()
 
 class LSTMTrainer(object):
-  def __init__(self, train, dev, v):
+  def __init__(self, layout, train, dev, v):
     self.v = v
-    self.rnn = RNN()
+    self.rnn = layout()
     self.model = L.Classifier(self.rnn)
     self.eval_model = self.model.copy()
     self.eval_model.predictor.train = False

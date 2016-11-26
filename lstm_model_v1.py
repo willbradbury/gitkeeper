@@ -20,13 +20,30 @@ from sklearn.feature_extraction.text import CountVectorizer
 from lstm_trainer import LSTMTrainer
 import json, util, random, model
 
+class RNN(Chain):
+  """3 layer RNN with one LSTM layer and a 1000 neuron embedding."""
+  def __init__(self):
+    super(RNN, self).__init__(
+        embed = L.EmbedID(1000, 100), # word embedding
+        mid = L.LSTM(100, 50), # the first LSTM layer
+        out = L.Linear(50, 1000), # the feed-forward output layer
+    )
+
+  def reset_state(self):
+    self.mid.reset_state()
+
+  def __call__(self, cur_word):
+    """Predict the next word given the |cur_word| id."""
+    return self.out(self.mid(self.embed(cur_word)))
+
 class LSTMModel(model.Model):
   def __init__(self, repo, v=1):
     self.v = v
+    self.rnn_layout = RNN
     self.file_tokenizer = FileTokenizer(v=v)
     self.diff_tokenizer = DiffTokenizer(self.file_tokenizer, v=v)
     self.repo_tokenizer = RepoTokenizer(self.file_tokenizer, v=v)
-    self.embedder = TokenEmbedder(embed_size=1000, cap=500, v=v)
+    self.embedder = TokenEmbedder(embed_size=1000, cap=100, v=v)
     self.extractor = SimpleExtractor(v=v)
     self.repo = repo
     self.clf = SVC()
@@ -39,7 +56,7 @@ class LSTMModel(model.Model):
     self.dev_set = np.array(list(self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))), dtype=np.int32)
 
     # train the rnn on the repo, reporting dev error along the way
-    self.lstm_trainer = LSTMTrainer(self.train_set, self.dev_set, v=self.v)
+    self.lstm_trainer = LSTMTrainer(self.rnn_layout, self.train_set, self.dev_set, v=self.v)
     self.lstm_trainer.get_trainer().run()
 
     # learn svm on the perplexity feature
