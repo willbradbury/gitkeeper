@@ -70,20 +70,23 @@ class BPTTUpdater(training.StandardUpdater):
     optimizer.update()
 
 class LSTMTrainer(object):
-  def __init__(self, layout, train, dev, v):
+  def __init__(self, layout, train, dev, epochs, offsets, bprop_depth, v):
     self.v = v
+    self.epochs = epochs
+    self.offsets = offsets
+    self.bprop_depth = bprop_depth
     self.rnn = layout()
     self.model = L.Classifier(self.rnn)
     self.eval_model = self.model.copy()
     self.eval_model.predictor.train = False
     self.optimizer = optimizers.SGD()
     self.optimizer.setup(self.model)
-    self.train_iter = ParallelSequentialIterator(train, 20, repeat=True)
+    self.train_iter = ParallelSequentialIterator(train, self.epochs, repeat=True)
     self.dev_iter = ParallelSequentialIterator(dev, 1, repeat=False)
 
   def get_trainer(self):
-    updater = BPTTUpdater(self.train_iter, self.optimizer, 35, -1)
-    trainer = training.Trainer(updater, (20, 'epoch'), out='result')
+    updater = BPTTUpdater(self.train_iter, self.optimizer, self.bprop_depth, -1)
+    trainer = training.Trainer(updater, (self.epochs, 'epoch'), out='result')
     trainer.extend(extensions.Evaluator(self.dev_iter, self.eval_model,
       eval_hook=lambda _: self.eval_model.predictor.reset_state()))
     trainer.extend(extensions.LogReport())

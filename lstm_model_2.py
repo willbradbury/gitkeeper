@@ -21,30 +21,48 @@ from lstm_trainer import LSTMTrainer
 import json, util, random, model
 
 class RNN(Chain):
-  """3 layer RNN with one LSTM layer and a 1000 neuron embedding."""
-  def __init__(self):
+  """4 layer RNN with 2 LSTM layers and a 1000 neuron embedding."""
+  def __init__(self, lstm_width=100, train=True):
     super(RNN, self).__init__(
-        embed = L.EmbedID(1000, 100), # word embedding
-        mid = L.LSTM(100, 50), # the first LSTM layer
-        out = L.Linear(50, 1000), # the feed-forward output layer
+        embed = L.EmbedID(1000, lstm_width), # word embedding
+        l1 = L.LSTM(lstm_width, lstm_width), # the first LSTM layer
+        l2 = L.LSTM(lstm_width, lstm_width), # the second LSTM layer
+        out = L.Linear(lstm_width, 1000), # the feed-forward output layer
     )
+    for param in self.params():
+        param.data[...] = np.random.uniform(-.1,.1, param.data.shape)
+    self.train = train
 
   def reset_state(self):
-    self.mid.reset_state()
+    self.l1.reset_state()
+    self.l2.reset_state()
 
   def __call__(self, cur_word):
     """Predict the next word given the |cur_word| id."""
-    return self.out(self.mid(self.embed(cur_word)))
+    h0 = self.embed(cur_word)
+    h1 = self.l1(F.dropout(h0, train=self.train))
+    h2 = self.l2(F.dropout(h1, train=self.train))
+    out = self.out(F.dropout(h2, train=self.train))
+    return out
 
 class LSTMModel(model.Model):
   def __init__(self, repo, v=1):
     self.v = v
-    self.rnn_layout = RNN
+    
+    # Model parameters (along with lstm_width above)
+    self.epochs = 5 # number of runs through the entire data during training
+    self.offsets = 35 # number of pointers in the data during training
+    self.bprop_depth = 50 # how many characters are rememebered by the rnn
+    embed_size = 1000 # number of allowable tokens/characters
+    tokenization_cap = 1000000 # how many tokens are read from the repo
+    self.test_cap = 10000 # how many tokens are read from each diff (< token cap)
+
+    self.embedder = TokenEmbedder(embed_size=embed_size, cap=tokenization_cap, v=v)
+    self.rnn_layout = RNN # set the layout
+    self.extractor = SimpleExtractor(v=v)
     self.file_tokenizer = FileTokenizer(v=v)
     self.diff_tokenizer = DiffTokenizer(self.file_tokenizer, v=v)
     self.repo_tokenizer = RepoTokenizer(self.file_tokenizer, v=v)
-    self.embedder = TokenEmbedder(embed_size=1000, cap=100, v=v)
-    self.extractor = SimpleExtractor(v=v)
     self.repo = repo
     self.clf = SVC()
 
@@ -56,7 +74,7 @@ class LSTMModel(model.Model):
     self.dev_set = np.array(list(self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))), dtype=np.int32)
 
     # train the rnn on the repo, reporting dev error along the way
-    self.lstm_trainer = LSTMTrainer(self.rnn_layout, self.train_set, self.dev_set, v=self.v)
+    self.lstm_trainer = LSTMTrainer(self.rnn_layout, self.train_set, self.dev_set, epochs=self.epochs, offsets=self.offsets, bprop_depth=self.bprop_depth, v=self.v)
     self.lstm_trainer.get_trainer().run()
 
     # learn svm on the perplexity feature
@@ -93,7 +111,7 @@ class LSTMModel(model.Model):
     """computes the loss when trying to predict the next token from each token
     in |diff|."""
     diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff), wrap=False))
-    diff_tokens = diff_tokens[:1000]
+    diff_tokens = diff_tokens[:self.test_cap]
     return self.lstm_trainer.compute_perplexity_slow(diff_tokens)
 
 class FileTokenizer(object):

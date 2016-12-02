@@ -39,12 +39,18 @@ class RNN(Chain):
 class LSTMModel(model.Model):
   def __init__(self, repo, v=1):
     self.v = v
+    
+    self.epochs = 5
+    self.offsets = 35
+    self.bprop_depth = 50
     self.rnn_layout = RNN
+    self.embedder = TokenEmbedder(embed_size=1000, cap=1000000, v=v)
+    self.test_cap = 10000
+
+    self.extractor = SimpleExtractor(v=v)
     self.file_tokenizer = FileTokenizer(v=v)
     self.diff_tokenizer = DiffTokenizer(self.file_tokenizer, v=v)
     self.repo_tokenizer = RepoTokenizer(self.file_tokenizer, v=v)
-    self.embedder = TokenEmbedder(embed_size=1000, cap=100, v=v)
-    self.extractor = SimpleExtractor(v=v)
     self.repo = repo
     self.clf = SVC()
 
@@ -56,7 +62,7 @@ class LSTMModel(model.Model):
     self.dev_set = np.array(list(self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))), dtype=np.int32)
 
     # train the rnn on the repo, reporting dev error along the way
-    self.lstm_trainer = LSTMTrainer(self.rnn_layout, self.train_set, self.dev_set, v=self.v)
+    self.lstm_trainer = LSTMTrainer(self.rnn_layout, self.train_set, self.dev_set, epochs=self.epochs, offsets=self.offsets, bprop_depth=self.bprop_depth, v=self.v)
     self.lstm_trainer.get_trainer().run()
 
     # learn svm on the perplexity feature
@@ -68,7 +74,6 @@ class LSTMModel(model.Model):
       meta_f = self.repo.getMetaFile(pid, inTraining=True)
       meta_json = json.load(meta_f)
       y = np.append(y,self.extractor.label(meta_json))
-      print x,y
     X = x.reshape(x.size,1)
     self.clf.fit(X,y)
     score = self.clf.score(X,y)
@@ -87,7 +92,6 @@ class LSTMModel(model.Model):
       y = np.append(y,self.extractor.label(meta_json))
 
     X = x.reshape(x.size,1)
-    print y
     score = self.clf.score(X,y)
     util.log(self.v, 1, "mean testing accuracy: " + str(score))
 
@@ -95,7 +99,7 @@ class LSTMModel(model.Model):
     """computes the loss when trying to predict the next token from each token
     in |diff|."""
     diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff), wrap=False))
-    diff_tokens = diff_tokens[:1000]
+    diff_tokens = diff_tokens[:self.test_cap]
     return self.lstm_trainer.compute_perplexity_slow(diff_tokens)
 
 class FileTokenizer(object):
@@ -112,12 +116,18 @@ class DiffTokenizer(object):
   def __init__(self, ft, v):
     self.v = v
     self.ft = ft
+    self.extractor = SimpleExtractor(v=v)
 
   def tokenize(self, repo, inTraining=True):
     # tokenize using the yield operator
     util.log(self.v, 3, "tokenizing diffs in "+repo.name+"/"+("train" if inTraining else "test"))
 
     for i,pid in enumerate(repo.getExamples(inTraining=inTraining)):
+      meta_f = repo.getMetaFile(pid, inTraining=inTraining)
+      meta_json = json.load(meta_f)
+      # validation accuracy should only include accepted diffs
+      if self.extractor.label(meta_json) != 1: continue
+
       diff_f = repo.getDiffFile(pid, inTraining=inTraining)
       for token in self.ft.tokenize(diff_f):
         yield token
@@ -132,7 +142,7 @@ class RepoTokenizer(object):
     util.log(self.v, 3, "tokenizing repo " + repo.name)
     # tokenize using the yield operator
     for fileName in repo.getDirList():
-      print "Tokenizing fileName: ", fileName
+      util.log(self.v, 3, "Tokenizing fileName: "+ fileName)
       f = open(fileName)
       for token in self.ft.tokenize(f):
         yield token
