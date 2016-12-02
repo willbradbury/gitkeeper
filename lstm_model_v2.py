@@ -136,7 +136,7 @@ class RepoTokenizer(object):
     util.log(self.v, 3, "tokenizing repo " + repo.name)
     # tokenize using the yield operator
     for fileName in repo.getDirList():
-      print "Tokenizing fileName: ", fileName
+      util.log(self.v, 3, "Tokenizing fileName: "+ fileName)
       f = open(fileName)
       for token in self.ft.tokenize(f):
         yield token

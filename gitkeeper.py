@@ -8,7 +8,7 @@ from model import Model, model_factory
 from lstm_model_v2 import LSTMModel
 
 holdout_fraction = 0.2
-verbosity = 3
+verbosity = 2
 
 def usage():
   print "gitkeeper (c) Alex Wang, Shivaal Roy, Will Bradbury"
