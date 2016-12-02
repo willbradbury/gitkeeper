@@ -43,8 +43,8 @@ class Repo(object):
     for root, _, files in os.walk(default_repo_root + self.id + '/' + self.repoName):
       for filename in files:
         if filename[0] == '.' or '/.' in root: continue
-        if 'src' not in root: continue
-        if filename[-3:] == '.js': 
+        #if 'src' not in root: continue
+        if filename[-3:] == '.py': 
           yield root + "/" + filename
 
 
@@ -60,11 +60,11 @@ class RemoteRepo(object):
     util.createAndCd(self.id)
     util.createAndCd('train')
     # download train data
-    util.downloadPullRequests(self.name, 1, 4384, v=self.v)
+    util.downloadPullRequests(self.name, 1, 2, v=self.v)
     util.go_to_parent()
     util.createAndCd('test')
     # download test data
-    util.downloadPullRequests(self.name, 4384, 5479, v=self.v)
+    util.downloadPullRequests(self.name, 2, 3, v=self.v)
     util.go_to_parent()
     os.system("git clone git@github.com:"+ self.name + ".git")
     util.log(self.v, 2, "downloaded repo " + self.name)
