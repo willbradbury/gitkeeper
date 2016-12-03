@@ -95,47 +95,31 @@ class LSTMModel(model.Model):
                                     v=self.v)
     self.lstm_trainer.get_trainer().run()
 
-    # learn svm on the perplexity feature
-    util.log(self.v, 2, "training svm...")
-    x,y = np.array([]), np.array([])
-    for i,pid in enumerate(self.repo.getExamples(inTraining=True)):
-      diff_f = self.repo.getDiffFile(pid, inTraining=True)
-      x = np.append(x, self.get_perplexity(diff_f))
-
-      meta_f = self.repo.getMetaFile(pid, inTraining=True)
-      meta_json = json.load(meta_f)
-      y = np.append(y,self.extractor.label(meta_json))
-    X = x.reshape(x.size,1) # This needs to change if new features are added
-    self.clf.fit(X,y)
-
-    for i in range(np.size(x)):
-        print x[i],y[i]
-
-    y_pred = self.clf.predict(X)
-    precision = precision_score(y,y_pred)
-    recall = recall_score(y,y_pred)
-    accuracy = accuracy_score(y,y_pred)
-    util.log(self.v, 1,\
-        "training: acc, prec, rec=%f %f %f" % (accuracy,precision,recall))
-
   def test(self):
     util.log(self.v, 1, "beginning testing on " + self.repo.name)
-    x,y = np.array([]), np.array([])
+    in_sum, out_sum = 0,0
     for i,pid in enumerate(self.repo.getExamples(inTraining=False)):
-      diff_f = self.repo.getDiffFile(pid, inTraining=False)
-      x = np.append(x, self.get_perplexity(diff_f))
-
+      # determine if the pull was accepted or rejected
       meta_f = self.repo.getMetaFile(pid, inTraining=False)
       meta_json = json.load(meta_f)
-      y = np.append(y,self.extractor.label(meta_json))
-    X = x.reshape(x.size,1) # This needs to change if new features are added
+      label = self.extractor.label(meta_json)
 
-    y_pred = self.clf.predict(X)
-    precision = precision_score(y,y_pred)
-    recall = recall_score(y,y_pred)
-    accuracy = accuracy_score(y,y_pred)
+      # get diff perplexity using trained rnn
+      diff_f = self.repo.getDiffFile(pid, inTraining=False)
+      x = self.get_perplexity(diff_f)
+      if x==0: continue # skip empty files
+
+      # increment the appropriate sum and counter
+      if label == 1:
+        in_sum, in_count = in_sum + x, in_count + 1
+      else:
+        out_sum, out_count = out_sum + x, out_count + 1
+
+    # compute overall statistics
+    in_avg = in_sum/in_count
+    out_avg = out_sum/out_count
     util.log(self.v, 1,\
-        "testing: acc, prec, rec=%f %f %f" % (accuracy,precision,recall))
+        "testing: in_sum, out_sum=%f %f" % (in_sum, out_sum))
 
   def get_perplexity(self, diff):
     """computes the loss when trying to predict the next token from each token

@@ -100,7 +100,7 @@ class LSTMTrainer(object):
     test_itr = ParallelSequentialIterator(test_set, 1, repeat=False)
     evaluator = extensions.Evaluator(test_itr, self.eval_model, device=-1)
     result = evaluator()
-    if not result: return 1
+    if not result: return 0
     util.log(self.v,3,result)
     return np.exp(float(result['main/loss'])/len(test_set))
 
