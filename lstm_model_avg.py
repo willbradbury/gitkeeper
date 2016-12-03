@@ -50,11 +50,11 @@ class LSTMModel(model.Model):
     
     # Model parameters (along with lstm_width above)
     self.epochs = 1 # number of runs through the entire data during training
-    self.offsets = 3 # number of pointers in the data during training
+    self.offsets = 1 # number of pointers in the data during training
     self.bprop_depth = 35 # how many token are rememebered by the rnn
     embed_size = 1000 # number of allowable tokens/characters
     tokenization_cap = 10000 # how many tokens are read from the repo
-    self.test_cap = 100 # how many tokens are read from each diff (< token cap)
+    self.test_cap = 1000 # how many tokens are read from each diff (< token cap)
 
     self.rnn_layout = RNN # set the layout
     self.extractor = SimpleExtractor(v=v)
