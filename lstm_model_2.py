@@ -29,8 +29,6 @@ class RNN(Chain):
         l2 = L.LSTM(lstm_width, lstm_width), # the second LSTM layer
         out = L.Linear(lstm_width, 1000), # the feed-forward output layer
     )
-    for param in self.params():
-        param.data[...] = np.random.uniform(-.1,.1, param.data.shape)
     self.train = train
 
   def reset_state(self):
@@ -40,10 +38,9 @@ class RNN(Chain):
   def __call__(self, cur_word):
     """Predict the next word given the |cur_word| id."""
     h0 = self.embed(cur_word)
-    """h1 = self.l1(F.dropout(h0, train=self.train))
+    h1 = self.l1(F.dropout(h0, train=self.train))
     h2 = self.l2(F.dropout(h1, train=self.train))
-    out = self.out(F.dropout(h2, train=self.train))"""
-    out = self.out(self.l2(self.l1(h0)))
+    out = self.out(F.dropout(h2, train=self.train))
     return out
 
 class LSTMModel(model.Model):
@@ -51,11 +48,11 @@ class LSTMModel(model.Model):
     self.v = v
     
     # Model parameters (along with lstm_width above)
-    self.epochs = 5 # number of runs through the entire data during training
-    self.offsets = 35 # number of pointers in the data during training
-    self.bprop_depth = 35 # how many characters are rememebered by the rnn
+    self.epochs = 200 # number of runs through the entire data during training
+    self.offsets = 5 # number of pointers in the data during training
+    self.bprop_depth = 15 # how many characters are rememebered by the rnn
     embed_size = 1000 # number of allowable tokens/characters
-    tokenization_cap = 100 # how many tokens are read from the repo
+    tokenization_cap = 1000 # how many tokens are read from the repo
     self.test_cap = 10000 # how many tokens are read from each diff (< token cap)
 
     self.embedder = TokenEmbedder(embed_size=embed_size, cap=tokenization_cap, v=v)
@@ -111,9 +108,9 @@ class LSTMModel(model.Model):
   def get_perplexity(self, diff):
     """computes the loss when trying to predict the next token from each token
     in |diff|."""
-    diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff), wrap=False))
+    diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff)))
     diff_tokens = diff_tokens[:self.test_cap]
-    return self.lstm_trainer.compute_perplexity(diff_tokens)
+    return self.lstm_trainer.compute_perplexity(np.array(diff_tokens, dtype=np.int32))
 
 class FileTokenizer(object):
   """A class to tokenize files"""

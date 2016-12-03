@@ -100,7 +100,10 @@ class LSTMTrainer(object):
     test_itr = ParallelSequentialIterator(test_set, 1, repeat=False)
     evaluator = extensions.Evaluator(test_itr, self.eval_model, device=-1)
     result = evaluator()
-    return np.exp(float(result['main/loss']))
+    if not result:
+        return float('+inf')
+    util.log(self.v,3,result)
+    return np.exp(float(result['main/loss'])/len(test_set))
 
   def compute_perplexity_slow(self, test_set):
     loss = 0
