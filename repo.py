@@ -60,11 +60,11 @@ class RemoteRepo(object):
     util.createAndCd(self.id)
     util.createAndCd('train')
     # download train data
-    util.downloadPullRequests(self.name, 1, 2, v=self.v)
+    util.downloadPullRequests(self.name, 1, 4, v=self.v)
     util.go_to_parent()
     util.createAndCd('test')
     # download test data
-    util.downloadPullRequests(self.name, 2, 3, v=self.v)
+    util.downloadPullRequests(self.name, 1, 4, v=self.v)
     util.go_to_parent()
     os.system("git clone git@github.com:"+ self.name + ".git")
     util.log(self.v, 2, "downloaded repo " + self.name)
