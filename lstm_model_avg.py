@@ -54,7 +54,7 @@ class LSTMModel(model.Model):
     self.bprop_depth = 35 # how many token are rememebered by the rnn
     embed_size = 1000 # number of allowable tokens/characters
     tokenization_cap = 10000 # how many tokens are read from the repo
-    self.test_cap = 1000 # how many tokens are read from each diff (< token cap)
+    self.test_cap = 10000 # how many tokens are read from each diff (< token cap)
 
     self.rnn_layout = RNN # set the layout
     self.extractor = SimpleExtractor(v=v)
@@ -97,7 +97,7 @@ class LSTMModel(model.Model):
 
   def test(self):
     util.log(self.v, 1, "beginning testing on " + self.repo.name)
-    in_sum, out_sum = 0,0
+    in_sum, out_sum, in_count, out_count = 0,0,0,0
     for i,pid in enumerate(self.repo.getExamples(inTraining=False)):
       # determine if the pull was accepted or rejected
       meta_f = self.repo.getMetaFile(pid, inTraining=False)
