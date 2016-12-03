@@ -40,9 +40,10 @@ class RNN(Chain):
   def __call__(self, cur_word):
     """Predict the next word given the |cur_word| id."""
     h0 = self.embed(cur_word)
-    h1 = self.l1(F.dropout(h0, train=self.train))
+    """h1 = self.l1(F.dropout(h0, train=self.train))
     h2 = self.l2(F.dropout(h1, train=self.train))
-    out = self.out(F.dropout(h2, train=self.train))
+    out = self.out(F.dropout(h2, train=self.train))"""
+    out = self.out(self.l2(self.l1(h0)))
     return out
 
 class LSTMModel(model.Model):
@@ -52,9 +53,9 @@ class LSTMModel(model.Model):
     # Model parameters (along with lstm_width above)
     self.epochs = 5 # number of runs through the entire data during training
     self.offsets = 35 # number of pointers in the data during training
-    self.bprop_depth = 50 # how many characters are rememebered by the rnn
+    self.bprop_depth = 35 # how many characters are rememebered by the rnn
     embed_size = 1000 # number of allowable tokens/characters
-    tokenization_cap = 1000000 # how many tokens are read from the repo
+    tokenization_cap = 100 # how many tokens are read from the repo
     self.test_cap = 10000 # how many tokens are read from each diff (< token cap)
 
     self.embedder = TokenEmbedder(embed_size=embed_size, cap=tokenization_cap, v=v)
@@ -112,7 +113,7 @@ class LSTMModel(model.Model):
     in |diff|."""
     diff_tokens = list(self.embedder.embed(self.file_tokenizer.tokenize(diff), wrap=False))
     diff_tokens = diff_tokens[:self.test_cap]
-    return self.lstm_trainer.compute_perplexity_slow(diff_tokens)
+    return self.lstm_trainer.compute_perplexity(diff_tokens)
 
 class FileTokenizer(object):
   """A class to tokenize files"""
