@@ -23,7 +23,7 @@ import json, util, random, model, re, collections
 
 class RNN(Chain):
   """4 layer RNN with 2 LSTM layers and a 1000 neuron embedding."""
-  def __init__(self, lstm_width=100, train=True):
+  def __init__(self, lstm_width=50, train=True):
     super(RNN, self).__init__(
         embed = L.EmbedID(1000, lstm_width), # word embedding
         l1 = L.LSTM(lstm_width, lstm_width), # the first LSTM layer
@@ -49,11 +49,11 @@ class LSTMModel(model.Model):
     self.v = v
     
     # Model parameters (along with lstm_width above)
-    self.epochs = 20 # number of runs through the entire data during training
-    self.offsets = 5 # number of pointers in the data during training
-    self.bprop_depth = 15 # how many characters are rememebered by the rnn
+    self.epochs = 5 # number of runs through the entire data during training
+    self.offsets = 10 # number of pointers in the data during training
+    self.bprop_depth = 15 # how many token are rememebered by the rnn
     embed_size = 1000 # number of allowable tokens/characters
-    tokenization_cap = 100 # how many tokens are read from the repo
+    tokenization_cap = 10000 # how many tokens are read from the repo
     self.test_cap = 10000 # how many tokens are read from each diff (< token cap)
 
     self.rnn_layout = RNN # set the layout
@@ -102,9 +102,9 @@ class LSTMModel(model.Model):
     self.clf.fit(X,y)
 
     y_pred = self.clf.predict(X)
-    precision = sklearn.metrics.precision_score(y,y_pred)
-    recall = sklearn.metrics.recall_score(y,y_pred)
-    accuracy = sklearn.metrics.accuracy_score(y,y_pred)
+    precision = precision_score(y,y_pred)
+    recall = recall_score(y,y_pred)
+    accuracy = accuracy_score(y,y_pred)
     util.log(self.v, 1,\
         "training: acc, prec, rec=%f %f %f" % (accuracy,precision,recall))
 
@@ -121,9 +121,9 @@ class LSTMModel(model.Model):
     X = x.reshape(x.size,1) # This needs to change if new features are added
 
     y_pred = self.clf.predict(X)
-    precision = sklearn.metrics.precision_score(y,y_pred)
-    recall = sklearn.metrics.recall_score(y,y_pred)
-    accuracy = sklearn.metrics.accuracy_score(y,y_pred)
+    precision = precision_score(y,y_pred)
+    recall = recall_score(y,y_pred)
+    accuracy = accuracy_score(y,y_pred)
     util.log(self.v, 1,\
         "testing: acc, prec, rec=%f %f %f" % (accuracy,precision,recall))
 
