@@ -11,21 +11,6 @@ from chainer.training import extensions
 
 import util
 
-class RNN(Chain):
-  def __init__(self):
-    super(RNN, self).__init__(
-        embed = L.EmbedID(1000, 100), # word embedding
-        mid = L.LSTM(100, 50), # the first LSTM layer
-        out = L.Linear(50, 1000), # the feed-forward output layer
-    )
-
-  def reset_state(self):
-    self.mid.reset_state()
-
-  def __call__(self, cur_word):
-    """Predict the next word given the |cur_word| id."""
-    return self.out(self.mid(self.embed(cur_word)))
-
 class ParallelSequentialIterator(chainer.dataset.Iterator):
   def __init__(self, dataset, batch_size, repeat=True):
     self.dataset = dataset
@@ -85,20 +70,23 @@ class BPTTUpdater(training.StandardUpdater):
     optimizer.update()
 
 class LSTMTrainer(object):
-  def __init__(self, train, dev, v):
+  def __init__(self, layout, train, dev, epochs, offsets, bprop_depth, v):
     self.v = v
-    self.rnn = RNN()
+    self.epochs = epochs
+    self.offsets = offsets
+    self.bprop_depth = bprop_depth
+    self.rnn = layout()
     self.model = L.Classifier(self.rnn)
     self.eval_model = self.model.copy()
     self.eval_model.predictor.train = False
     self.optimizer = optimizers.SGD()
     self.optimizer.setup(self.model)
-    self.train_iter = ParallelSequentialIterator(train, 20, repeat=True)
+    self.train_iter = ParallelSequentialIterator(train, self.epochs, repeat=True)
     self.dev_iter = ParallelSequentialIterator(dev, 1, repeat=False)
 
   def get_trainer(self):
-    updater = BPTTUpdater(self.train_iter, self.optimizer, 35, -1)
-    trainer = training.Trainer(updater, (20, 'epoch'), out='result')
+    updater = BPTTUpdater(self.train_iter, self.optimizer, self.bprop_depth, -1)
+    trainer = training.Trainer(updater, (self.epochs, 'epoch'), out='result')
     trainer.extend(extensions.Evaluator(self.dev_iter, self.eval_model,
       eval_hook=lambda _: self.eval_model.predictor.reset_state()))
     trainer.extend(extensions.LogReport())
@@ -112,7 +100,10 @@ class LSTMTrainer(object):
     test_itr = ParallelSequentialIterator(test_set, 1, repeat=False)
     evaluator = extensions.Evaluator(test_itr, self.eval_model, device=-1)
     result = evaluator()
-    return np.exp(float(result['main/loss']))
+    if not result:
+        return float('+inf')
+    util.log(self.v,3,result)
+    return np.exp(float(result['main/loss'])/len(test_set))
 
   def compute_perplexity_slow(self, test_set):
     loss = 0
