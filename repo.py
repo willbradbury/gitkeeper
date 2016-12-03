@@ -43,8 +43,8 @@ class Repo(object):
     for root, _, files in os.walk(default_repo_root + self.id + '/' + self.repoName):
       for filename in files:
         if filename[0] == '.' or '/.' in root: continue
-        #if 'src' not in root: continue
-        if filename[-3:] == '.py': 
+        if 'src' not in root: continue
+        if filename[-3:] == '.js': 
           yield root + "/" + filename
 
 

@@ -5,10 +5,10 @@ import sys
 import util
 from model import Model, model_factory
 #from baseline_model import BaselineModel
-from lstm_model_2 import LSTMModel
+from lstm_model_3 import LSTMModel
 
 holdout_fraction = 0.2
-verbosity = 2
+verbosity = 3
 
 def usage():
   print "gitkeeper (c) Alex Wang, Shivaal Roy, Will Bradbury"

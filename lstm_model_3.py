@@ -19,7 +19,7 @@ from sklearn.metrics import recall_score, precision_score, accuracy_score
 
 # gitkeeper imports
 from lstm_trainer import LSTMTrainer
-import json, util, random, model, re
+import json, util, random, model, re, collections
 
 class RNN(Chain):
   """4 layer RNN with 2 LSTM layers and a 1000 neuron embedding."""
@@ -49,11 +49,11 @@ class LSTMModel(model.Model):
     self.v = v
     
     # Model parameters (along with lstm_width above)
-    self.epochs = 200 # number of runs through the entire data during training
+    self.epochs = 20 # number of runs through the entire data during training
     self.offsets = 5 # number of pointers in the data during training
     self.bprop_depth = 15 # how many characters are rememebered by the rnn
     embed_size = 1000 # number of allowable tokens/characters
-    tokenization_cap = 1000 # how many tokens are read from the repo
+    tokenization_cap = 100 # how many tokens are read from the repo
     self.test_cap = 10000 # how many tokens are read from each diff (< token cap)
 
     self.rnn_layout = RNN # set the layout
@@ -64,7 +64,7 @@ class LSTMModel(model.Model):
     self.repo = repo
     self.embedder = TokenEmbedder(embed_size=embed_size,
                                   cap=tokenization_cap,
-                                  corpus=self.repo_tokenizer.tokenize(self.repo),
+                                  corpus_itr=self.repo_tokenizer.tokenize(self.repo),
                                   v=v)
     self.clf = SVC()
 
@@ -136,14 +136,23 @@ class LSTMModel(model.Model):
 
 class FileTokenizer(object):
   """A class to tokenize files"""
+  punctuation = r'(\.|,|\\|/|#|!|\$|%|\^|&|\*|;|:|{|}|=|-|_|`|~|\(|\)| |\t|\n)'
+
   def __init__(self, v):
     self.v = v
 
   def tokenize(self, f):
-    # for line in f:
-    #   for token in re.split('')
-    for char in f.read():
-      yield char
+    for line in f:
+      arr = self.tokenizeLine(line)
+      for token in arr:
+        yield token
+      if len(arr): yield '\n'
+
+  def tokenizeLine(self, line):
+    l =  re.split(self.punctuation, line)
+    q = [x for x in l if x != '']
+    return [x for x,y in [(z1,z2) for z1,z2 in zip(q,q[1:]) if not(z1==z2 and z1 in [' ', '\t', '\n'])]]
+
 
 class DiffTokenizer(object):
   """A class to tokenize a collection of diffs using a file tokenizer"""
@@ -184,10 +193,14 @@ class RepoTokenizer(object):
 
 class TokenEmbedder(object):
   """A class to turn tokens into token ids"""
-  def __init__(self, embed_size, v, cap=5000):
+  def __init__(self, embed_size, corpus_itr, v, cap=5000):
     self.v = v
     self.size = embed_size # number of total IDs to make
     self.cap = cap
+
+    # Create embedding from embed_size most common characters
+    most_common = collections.Counter(corpus_itr).most_common(self.size)
+    self.embedding = {t[0]:i for i,t in enumerate(most_common)}
 
   def embed(self, token_stream, wrap=False):
     util.log(self.v, 3, "embedding stream")
