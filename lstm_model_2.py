@@ -15,6 +15,7 @@ from chainer.training import extensions
 # sklearn imports
 from sklearn.svm import SVC
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import recall_score, precision_score, accuracy_score
 
 # gitkeeper imports
 from lstm_trainer import LSTMTrainer
@@ -68,11 +69,21 @@ class LSTMModel(model.Model):
     util.log(self.v, 1, "beginning training on " + self.repo.name)
 
     # tokenize the repo and the training diffs
-    self.train_set = np.array(list(self.embedder.embed(self.repo_tokenizer.tokenize(self.repo))), dtype=np.int32)
-    self.dev_set = np.array(list(self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))), dtype=np.int32)
+    self.train_set = np.array(\
+      list(self.embedder.embed(self.repo_tokenizer.tokenize(self.repo))),
+      dtype=np.int32)
+    self.dev_set = np.array(\
+      list(self.embedder.embed(self.diff_tokenizer.tokenize(self.repo))),
+      dtype=np.int32)
 
     # train the rnn on the repo, reporting dev error along the way
-    self.lstm_trainer = LSTMTrainer(self.rnn_layout, self.train_set, self.dev_set, epochs=self.epochs, offsets=self.offsets, bprop_depth=self.bprop_depth, v=self.v)
+    self.lstm_trainer = LSTMTrainer(self.rnn_layout,
+                                    self.train_set,
+                                    self.dev_set,
+                                    epochs=self.epochs,
+                                    offsets=self.offsets,
+                                    bprop_depth=self.bprop_depth,
+                                    v=self.v)
     self.lstm_trainer.get_trainer().run()
 
     # learn svm on the perplexity feature
@@ -84,11 +95,15 @@ class LSTMModel(model.Model):
       meta_f = self.repo.getMetaFile(pid, inTraining=True)
       meta_json = json.load(meta_f)
       y = np.append(y,self.extractor.label(meta_json))
-    X = x.reshape(x.size,1)
+    X = x.reshape(x.size,1) # This needs to change if new features are added
     self.clf.fit(X,y)
-    score = self.clf.score(X,y)
-      
-    util.log(self.v, 1, "mean training accuracy: " + str(score))
+
+    y_pred = self.clf.predict(X)
+    precision = sklearn.metrics.precision_score(y,y_pred)
+    recall = sklearn.metrics.recall_score(y,y_pred)
+    accuracy = sklearn.metrics.accuracy_score(y,y_pred)
+    util.log(self.v, 1,\
+        "training: acc, prec, rec=%f %f %f" % (accuracy,precision,recall))
 
   def test(self):
     util.log(self.v, 1, "beginning testing on " + self.repo.name)
@@ -100,10 +115,14 @@ class LSTMModel(model.Model):
       meta_f = self.repo.getMetaFile(pid, inTraining=False)
       meta_json = json.load(meta_f)
       y = np.append(y,self.extractor.label(meta_json))
+    X = x.reshape(x.size,1) # This needs to change if new features are added
 
-    X = x.reshape(x.size,1)
-    score = self.clf.score(X,y)
-    util.log(self.v, 1, "mean testing accuracy: " + str(score))
+    y_pred = self.clf.predict(X)
+    precision = sklearn.metrics.precision_score(y,y_pred)
+    recall = sklearn.metrics.recall_score(y,y_pred)
+    accuracy = sklearn.metrics.accuracy_score(y,y_pred)
+    util.log(self.v, 1,\
+        "testing: acc, prec, rec=%f %f %f" % (accuracy,precision,recall))
 
   def get_perplexity(self, diff):
     """computes the loss when trying to predict the next token from each token
@@ -130,7 +149,8 @@ class DiffTokenizer(object):
 
   def tokenize(self, repo, inTraining=True):
     # tokenize using the yield operator
-    util.log(self.v, 3, "tokenizing diffs in "+repo.name+"/"+("train" if inTraining else "test"))
+    util.log(self.v, 3, "tokenizing diffs in "+repo.name+"/"+\
+            ("train" if inTraining else "test"))
 
     for i,pid in enumerate(repo.getExamples(inTraining=inTraining)):
       meta_f = repo.getMetaFile(pid, inTraining=inTraining)
