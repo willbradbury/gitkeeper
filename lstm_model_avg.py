@@ -119,7 +119,7 @@ class LSTMModel(model.Model):
     in_avg = in_sum/in_count
     out_avg = out_sum/out_count
     util.log(self.v, 1,\
-        "testing: in_sum, out_sum=%f %f" % (in_sum, out_sum))
+        "testing: in_sum, out_sum=%f %f" % (in_avg, out_avg))
 
   def get_perplexity(self, diff):
     """computes the loss when trying to predict the next token from each token
